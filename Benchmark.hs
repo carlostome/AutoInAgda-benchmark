@@ -16,7 +16,8 @@ import           Turtle                    hiding (env)
 
 myConfig :: FilePath -> Config
 myConfig r = defaultConfig { timeLimit  = 120
-                           , reportFile = Just (encodeString r) }
+                           , reportFile = Just (encodeString r)
+                           , resamples  = 1}
 main :: IO ()
 main = do
   dir <- pwd
@@ -24,22 +25,24 @@ main = do
       evenDir = "Even"
       subdirs = [plusDir, evenDir]
 
+  print "Preparing testfiles"
   prepare dir subdirs
 
   defaultMainWith (myConfig (dir <> "report" <.> "html"))
-    [ mkbenchGroup dir plusDir $ plusBenchCases 5
-    , mkbenchGroup dir evenDir $ evenBenchCases 5
+    [ mkbenchGroup dir plusDir $ plusBenchCases 7
+    , mkbenchGroup dir evenDir $ evenBenchCases 7
     ]
 
-  cleanup dir subdirs
+  print "Cleaning testfiles"
+  cleanup subdirs
 
-cleanup :: FilePath -> [Text] -> IO ()
-cleanup dir = mapM_ (rmtree . (dir <>) . fromText)
+cleanup :: [Text] -> IO ()
+cleanup = mapM_ (rmtree . fromText)
 
 prepare :: FilePath -> [Text] -> IO ()
 prepare dir subdirs = forM_ subdirs $ \sd -> do
-  mkdir (dir <> fromText sd)
-  cp (dir <> fromText (sd <> "Base.agda")) (dir <> fromText sd <> "Base" <.> "agda")
+  mkdir (fromText sd)
+  cp (fromText (sd <> "Base.agda")) (fromText sd <> "Base" <.> "agda")
 
 mkbenchGroup :: FilePath -> Text -> [BenchCase] -> Benchmark
 mkbenchGroup dir subdir benchCases =
@@ -83,15 +86,18 @@ int n = fromString (show n)
 -- Even benchmark
 
 evenBenchCases :: Int -> [BenchCase]
-evenBenchCases n = take n $ map evenBenchCase (iterate (*2) 2)
+evenBenchCases n =
+  let cases = take n $ iterate (*2) 2
+  in  map evenBenchCase1 cases ++
+      map evenBenchCase2 cases
 
-evenBenchCase :: Int -> BenchCase
-evenBenchCase n =
+evenBenchCase1 :: Int -> BenchCase
+evenBenchCase1 n =
   BenchCase { name     = nm <> ".agda"
             , template = templ }
   where
     nm :: (Monoid s, IsString s) => s
-    nm = "Even" <> int n
+    nm = "EvenNum" <> int n
 
     templ :: [Line]
     templ =
@@ -102,6 +108,24 @@ evenBenchCase n =
       , ""
       , nm <> " : Even " <> int n
       , nm <> " = apply (auto " <> int n <> " rules)" ]
+
+evenBenchCase2 :: Int -> BenchCase
+evenBenchCase2 n =
+  BenchCase { name     = nm <> ".agda"
+            , template = templ }
+  where
+    nm :: (Monoid s, IsString s) => s
+    nm = "EvenFun" <> int n
+
+    templ :: [Line]
+    templ =
+      [ "module " <> nm <> " where"
+      , ""
+      , "open import Base"
+      , "open import Auto"
+      , ""
+      , nm <> " : forall {n} -> Even n -> Even (n + " <> int n <> ")"
+      , nm <> " = apply (auto " <> int (n * 2)  <> " rules)" ]
 
 --------------------------------------------------------------------------------
 -- Plus benchmark
@@ -126,3 +150,5 @@ plusBenchCase n =
       , ""
       , nm <> " : Plus " <> int n  <> " " <> unsafeTextToLine (repr (0 :: Int)) <> " " <> int n
       , nm <> " = apply (auto " <> int (n+1) <> " rules)" ]
+
+

@@ -16,5 +16,5 @@ chmod +x Benchmark.hs
 ./Benchmark.hs
 ```
 
-It uses `stack` scripting capabilities, so it should be avaliable on
+It uses [stack](https://docs.haskellstack.org/en/stable/README/) scripting capabilities, so it should be avaliable on
 your path.
