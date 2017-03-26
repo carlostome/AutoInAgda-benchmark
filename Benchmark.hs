@@ -17,8 +17,8 @@ import           Turtle                    hiding (env)
 
 myConfig :: FilePath -> Config
 myConfig r = defaultConfig { timeLimit  = 120
-                           , reportFile = Just (encodeString r)
-                           , resamples  = 1}
+                           , reportFile = Just (encodeString r) }
+
 main :: IO ()
 main = do
   dir <- pwd
