@@ -3,14 +3,15 @@
   --install-ghc runghc
   --package criterion
   --package turtle
+  --package extra
 -}
 
 {-# LANGUAGE OverloadedStrings #-}
 
+import           Control.Monad.Extra       (whenM)
 import           Criterion.Main
 import           Criterion.Types           hiding (template)
 import           Filesystem.Path.CurrentOS
-import Control.Monad (forM_)
 import           Prelude                   hiding (FilePath)
 import           Turtle                    hiding (env)
 
@@ -25,23 +26,24 @@ main = do
       evenDir = "Even"
       subdirs = [plusDir, evenDir]
 
-  print "Preparing testfiles"
-  prepare dir subdirs
+  echo "Preparing testfiles"
+  prepare subdirs
 
   defaultMainWith (myConfig (dir <> "report" <.> "html"))
     [ mkbenchGroup dir plusDir $ plusBenchCases 7
     , mkbenchGroup dir evenDir $ evenBenchCases 7
     ]
 
-  print "Cleaning testfiles"
+  echo "Cleaning testfiles"
   cleanup subdirs
 
 cleanup :: [Text] -> IO ()
 cleanup = mapM_ (rmtree . fromText)
 
-prepare :: FilePath -> [Text] -> IO ()
-prepare dir subdirs = forM_ subdirs $ \sd -> do
-  mkdir (fromText sd)
+prepare :: [Text] -> IO ()
+prepare = mapM_ $ \sd -> do
+  let sd' = fromText sd
+  whenM (not <$> testdir sd') (mkdir sd')
   cp (fromText (sd <> "Base.agda")) (fromText sd <> "Base" <.> "agda")
 
 mkbenchGroup :: FilePath -> Text -> [BenchCase] -> Benchmark
@@ -148,7 +150,7 @@ plusBenchCase n =
       , "open import Base"
       , "open import Auto"
       , ""
-      , nm <> " : Plus " <> int n  <> " " <> unsafeTextToLine (repr (0 :: Int)) <> " " <> int n
+      , nm <> " : Plus " <> int n  <> " " <> int 0 <> " " <> int n
       , nm <> " = apply (auto " <> int (n+1) <> " rules)" ]
 
 
