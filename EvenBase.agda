@@ -17,4 +17,4 @@ isEven-2 (isEven+2 n) = n
 rules : HintDB
 rules = ε << isEven0
           << isEven+2
-          << even+
+          -- << even+ 

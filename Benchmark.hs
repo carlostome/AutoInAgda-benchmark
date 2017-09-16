@@ -31,14 +31,14 @@ main = do
 
   defaultMainWith (myConfig (dir <> "report" <.> "html"))
     [ mkbenchGroup dir plusDir $ plusBenchCases 7
-    , mkbenchGroup dir evenDir $ evenBenchCases 7
+    -- , mkbenchGroup dir evenDir $ evenBenchCases 7
     ]
 
   echo "Cleaning testfiles"
-  cleanup subdirs
+  cleanup (map ((dir <>) . fromText) subdirs)
 
-cleanup :: [Text] -> IO ()
-cleanup = mapM_ (rmtree . fromText)
+cleanup :: [FilePath] -> IO ()
+cleanup = mapM_ rmtree
 
 prepare :: [Text] -> IO ()
 prepare = mapM_ $ \sd -> do
@@ -67,7 +67,10 @@ benchAgda fname = do
   exists <- testfile ifile
   when exists $ rm ifile
   -- run agda and discard output
-  sh $ inproc "agda" [fname] (return "")
+  sh $ do result <- inprocWithErr "agda" [fname] (return "")
+          case result of
+            Left err   -> die (lineToText err)
+            Right succ -> return ()
 
 data BenchCase =
   BenchCase { name :: Text
@@ -90,8 +93,8 @@ int n = fromString (show n)
 evenBenchCases :: Int -> [BenchCase]
 evenBenchCases n =
   let cases = take n $ iterate (*2) 2
-  in  map evenBenchCase1 cases ++
-      map evenBenchCase2 cases
+  in  map evenBenchCase1 cases
+    --  ++ map evenBenchCase2 cases
 
 evenBenchCase1 :: Int -> BenchCase
 evenBenchCase1 n =
