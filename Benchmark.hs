@@ -14,24 +14,25 @@ import           Criterion.Types           hiding (template)
 import           Filesystem.Path.CurrentOS
 import           Prelude                   hiding (FilePath)
 import           Turtle                    hiding (env)
+import           Data.Text                 (unpack)
 
 myConfig :: FilePath -> Config
-myConfig r = defaultConfig { timeLimit  = 120
+myConfig r = defaultConfig { timeLimit  = 300
                            , reportFile = Just (encodeString r) }
 
 main :: IO ()
 main = do
   dir <- pwd
-  let plusDir = "Plus"
+  let -- plusDir = "Plus"
       evenDir = "Even"
-      subdirs = [plusDir, evenDir]
+      subdirs = [evenDir]
 
   echo "Preparing testfiles"
   prepare subdirs
 
   defaultMainWith (myConfig (dir <> "report" <.> "html"))
-    [ mkbenchGroup dir plusDir $ plusBenchCases 7
-    -- , mkbenchGroup dir evenDir $ evenBenchCases 7
+    [ --mkbenchGroup dir plusDir $ plusBenchCases 7
+     mkbenchGroup dir evenDir $ evenBenchCases 6
     ]
 
   echo "Cleaning testfiles"
@@ -48,10 +49,10 @@ prepare = mapM_ $ \sd -> do
 
 mkbenchGroup :: FilePath -> Text -> [BenchCase] -> Benchmark
 mkbenchGroup dir subdir benchCases =
-  bgroup (show subdir) $ map (\c ->
+  bgroup (unpack subdir) $ map (\c ->
     env (setupEnv dir subdir c) $ \ _ -> do
       let nm = name c
-      bench (show nm) $ nfIO (benchAgda nm))
+      bench (unpack nm) $ nfIO (benchAgda nm))
     benchCases
 
 setupEnv :: FilePath -> Text -> BenchCase -> IO ()
@@ -92,9 +93,9 @@ int n = fromString (show n)
 
 evenBenchCases :: Int -> [BenchCase]
 evenBenchCases n =
-  let cases = take n $ iterate (*2) 2
+  let cases = take n $ iterate (*2) 8
   in  map evenBenchCase1 cases
-    --  ++ map evenBenchCase2 cases
+      ++ map evenBenchCase2 cases
 
 evenBenchCase1 :: Int -> BenchCase
 evenBenchCase1 n =
